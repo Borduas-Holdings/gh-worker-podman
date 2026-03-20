@@ -10,20 +10,37 @@ Built on [myoung34/github-runner](https://github.com/myoung34/docker-github-acti
 ghcr.io/borduas-holdings/gh-worker-podman
 ```
 
-## What's included
+## What's included (default)
 
-| Tool | Purpose |
-|------|---------|
-| **Podman** | Rootless, daemonless container engine |
-| **Buildah** | OCI image building (no daemon) |
-| **Skopeo** | Image inspection and copying between registries |
-| **podman-compose** | Docker Compose-compatible orchestration |
-| **npm** | Node.js package manager |
-| **jq** | JSON processing |
-| **docker → podman** | Symlink alias for full Docker CLI compatibility |
-| **docker-compose → podman-compose** | Wrapper script for compose compatibility |
+| Tool | Default | Build arg |
+|------|---------|-----------|
+| **Podman** + `docker` alias | On | `INSTALL_PODMAN` |
+| **python3-pip** + **podman-compose** + `docker-compose` alias | On | `INSTALL_PYTHON3_PIP` |
+| **Buildah** (OCI image building) | Off | `INSTALL_BUILDAH` |
+| **Skopeo** (image registry operations) | Off | `INSTALL_SKOPEO` |
+| **npm**, **jq**, **curl** | Always | — |
 
-All existing `docker build`, `docker run`, and `docker compose` commands work unchanged.
+All existing `docker build`, `docker run`, and `docker compose` commands work unchanged via aliases.
+
+### Custom builds
+
+Enable optional tools with `--build-arg`:
+
+```bash
+docker build \
+  --build-arg INSTALL_BUILDAH=true \
+  --build-arg INSTALL_SKOPEO=true \
+  -t my-runner:full .
+```
+
+Disable defaults to make a slimmer image:
+
+```bash
+docker build \
+  --build-arg INSTALL_PODMAN=false \
+  --build-arg INSTALL_PYTHON3_PIP=false \
+  -t my-runner:minimal .
+```
 
 ## Why Podman?
 
