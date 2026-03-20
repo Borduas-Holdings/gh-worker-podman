@@ -7,7 +7,7 @@ Built on [myoung34/github-runner](https://github.com/myoung34/docker-github-acti
 ## Image
 
 ```
-ghcr.io/borduas-holdings/gh-worker-podman
+jobordu/gh-worker-podman
 ```
 
 ## What's included (default)
@@ -59,7 +59,7 @@ docker run -d \
   -e ACCESS_TOKEN=your_pat_token \
   -e LABELS=podman,self-hosted,linux \
   -e EPHEMERAL=true \
-  ghcr.io/borduas-holdings/gh-worker-podman:latest
+  jobordu/gh-worker-podman:latest
 ```
 
 ### Akash SDL
@@ -67,7 +67,7 @@ docker run -d \
 ```yaml
 services:
   runner:
-    image: ghcr.io/borduas-holdings/gh-worker-podman:latest
+    image: jobordu/gh-worker-podman:latest
     env:
       - ACCESS_TOKEN=<your-github-pat>
       - ORG_NAME=your-org
