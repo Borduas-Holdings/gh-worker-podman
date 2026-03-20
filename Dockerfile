@@ -9,15 +9,18 @@ RUN apt-get update && \
       podman \
       buildah \
       skopeo \
-      podman-compose \
       uidmap \
       slirp4netns \
       fuse-overlayfs \
+      python3-pip \
       npm \
       jq \
       curl \
       && apt-get clean \
       && rm -rf /var/lib/apt/lists/*
+
+# podman-compose is not in Jammy repos — install via pip
+RUN pip3 install --no-cache-dir podman-compose
 
 # Alias docker → podman for full CLI compatibility
 RUN ln -sf /usr/bin/podman /usr/local/bin/docker
