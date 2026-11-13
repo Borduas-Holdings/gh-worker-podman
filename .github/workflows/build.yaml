@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
+    # No `tags: v*` trigger: a tag can be pushed from any commit, so a tag run must not
+    # receive the push token. Publishing release tags again needs a tag-scoped environment
+    # policy, which is the owner's call.
   schedule:
     - cron: '0 0 * * 0'  # Weekly rebuild on Sunday at midnight UTC
   workflow_dispatch:
@@ -16,6 +17,16 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    # ⛔ The Docker Hub WRITE token is DOCKERHUB_PUSH_TOKEN, a secret of the main-only
+    # `dockerhub-push` environment (infrastructure/github/environments/main.tf). This job enters
+    # it only on main's own push / schedule / dispatch; a dispatch from any other branch gets ''
+    # (no environment, no token) and builds without pushing. A DISTINCT name, never the org-wide
+    # DOCKERHUB_TOKEN, so nothing can fall back to it. tests/test_dockerhub_push_token_is_main_only.py.
+    environment: ${{ (github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')) && 'dockerhub-push' || '' }}
+    env:
+      PUSH_ENVIRONMENT: ${{ (github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')) && 'dockerhub-push' || '' }}
 
     steps:
       - name: Checkout repository
@@ -28,14 +39,16 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
+        if: env.PUSH_ENVIRONMENT == 'dockerhub-push'
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          # The account that owns the image namespace (jobordu/gh-worker-podman), not a secret.
+          username: jobordu
+          password: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
 
       - name: Generate build date
         id: date
-        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+        run: echo "date=$(date +'%Y%m%d')" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata for Docker
         id: meta
@@ -54,7 +67,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ env.PUSH_ENVIRONMENT == 'dockerhub-push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
